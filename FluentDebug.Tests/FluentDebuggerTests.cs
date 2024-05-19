@@ -21,6 +21,23 @@ public class FluentDebuggerTests
             .RunAsync(() => DelayMethodAsync(1));
     }
 
+    [Test]
+    public void log_sync_method_parameters()
+    {
+        var result = FluentDebugger.Create(new ConsoleLogger())
+            .LogParameters()
+            .Run(() => DelayMethod(1));
+    }
+    
+    
+    [Test]
+    public async Task log_async_method_parameters()
+    {
+        var result = await FluentDebugger.Create(new ConsoleLogger())
+            .LogParameters()
+            .RunAsync(() => DelayMethodAsync(1));
+    }
+
     private bool DelayMethod(int seconds)
     {
         Thread.Sleep(seconds * 1000);

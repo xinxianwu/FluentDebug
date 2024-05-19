@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace FluentDebug
     public class FluentDebugger
     {
         private readonly ILogger _logger;
+        private bool _logParameters;
 
         private FluentDebugger(ILogger logger)
         {
@@ -32,14 +34,16 @@ namespace FluentDebug
             var watch = Stopwatch.StartNew();
 
             MethodInfo methodInfo = null;
+            var parameters = string.Empty;
             if (expression.Body is MethodCallExpression methodCallExpression)
             {
                 methodInfo = methodCallExpression.Method;
+                parameters = LogParameters(methodInfo, methodCallExpression);
             }
 
             var result = expression.Compile().Invoke();
 
-            LofMethod(watch, methodInfo);
+            WriteLog(watch, methodInfo, parameters);
 
             return result;
         }
@@ -47,21 +51,42 @@ namespace FluentDebug
         public async Task<TResult> RunAsync<TResult>(Expression<Func<Task<TResult>>> expression)
         {
             var watch = Stopwatch.StartNew();
-            
+
             MethodInfo methodInfo = null;
+            var parameters = string.Empty;
             if (expression.Body is MethodCallExpression methodCallExpression)
             {
                 methodInfo = methodCallExpression.Method;
+                parameters = LogParameters(methodInfo, methodCallExpression);
             }
 
             var result = await expression.Compile().Invoke();
 
-            LofMethod(watch, methodInfo);
+            WriteLog(watch, methodInfo, parameters);
 
             return result;
         }
 
-        private void LofMethod(Stopwatch watch, MethodInfo methodInfo)
+        public FluentDebugger LogParameters()
+        {
+            _logParameters = true;
+            return this;
+        }
+
+        private string LogParameters(MethodInfo methodInfo, MethodCallExpression methodCallExpression)
+        {
+            if (_logParameters)
+            {
+                var parameterInfos = methodInfo.GetParameters();
+                var arguments = methodCallExpression.Arguments.ToList();
+
+                return string.Join(", ", parameterInfos.Zip(arguments, (info, expression1) => $"{info.Name}: {expression1}"));
+            }
+
+            return string.Empty;
+        }
+
+        private void WriteLog(Stopwatch watch, MethodInfo methodInfo, string parameters)
         {
             if (methodInfo == null)
             {
@@ -69,9 +94,15 @@ namespace FluentDebug
             }
             else
             {
-                _logger.LogInformation($"[{methodInfo.Name}()] Execution time: {watch.ElapsedMilliseconds}ms");
+                if (string.IsNullOrEmpty(parameters))
+                {
+                    _logger.LogInformation($"[{methodInfo.Name}()] Execution time: {watch.ElapsedMilliseconds}ms");
+                }
+                else
+                {
+                    _logger.LogInformation($"[{methodInfo.Name}()] Parameters: {parameters} | Execution time: {watch.ElapsedMilliseconds}ms");
+                }
             }
-            
         }
     }
 }

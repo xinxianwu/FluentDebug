@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentDebug", "FluentDebug\FluentDebug.csproj", "{063431EF-C42A-4E31-B97E-6BDD8ED1258F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentDebug.Tests", "FluentDebug.Tests\FluentDebug.Tests.csproj", "{800E4A4D-6CF0-43F6-8C33-709CD49D854A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{063431EF-C42A-4E31-B97E-6BDD8ED1258F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{063431EF-C42A-4E31-B97E-6BDD8ED1258F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{063431EF-C42A-4E31-B97E-6BDD8ED1258F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{063431EF-C42A-4E31-B97E-6BDD8ED1258F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{800E4A4D-6CF0-43F6-8C33-709CD49D854A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{800E4A4D-6CF0-43F6-8C33-709CD49D854A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{800E4A4D-6CF0-43F6-8C33-709CD49D854A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{800E4A4D-6CF0-43F6-8C33-709CD49D854A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

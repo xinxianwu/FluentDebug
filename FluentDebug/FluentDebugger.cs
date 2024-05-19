@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -25,26 +27,51 @@ namespace FluentDebug
             return new FluentDebugger(NullLogger.Instance);
         }
 
-        public TResult Run<TResult>(Func<TResult> func)
+        public TResult Run<TResult>(Expression<Func<TResult>> expression)
         {
             var watch = Stopwatch.StartNew();
 
-            var result = func();
+            MethodInfo methodInfo = null;
+            if (expression.Body is MethodCallExpression methodCallExpression)
+            {
+                methodInfo = methodCallExpression.Method;
+            }
 
-            _logger?.LogInformation($"Execution time: {watch.ElapsedMilliseconds}ms");
+            var result = expression.Compile().Invoke();
+
+            LofMethod(watch, methodInfo);
 
             return result;
         }
 
-        public async Task<TResult> RunAsync<TResult>(Func<Task<TResult>> func)
+        public async Task<TResult> RunAsync<TResult>(Expression<Func<Task<TResult>>> expression)
         {
             var watch = Stopwatch.StartNew();
+            
+            MethodInfo methodInfo = null;
+            if (expression.Body is MethodCallExpression methodCallExpression)
+            {
+                methodInfo = methodCallExpression.Method;
+            }
 
-            var result = await func();
+            var result = await expression.Compile().Invoke();
 
-            _logger?.LogInformation($"Execution time: {watch.ElapsedMilliseconds}ms");
+            LofMethod(watch, methodInfo);
 
             return result;
+        }
+
+        private void LofMethod(Stopwatch watch, MethodInfo methodInfo)
+        {
+            if (methodInfo == null)
+            {
+                _logger.LogInformation($"Execution time: {watch.ElapsedMilliseconds}ms");
+            }
+            else
+            {
+                _logger.LogInformation($"[{methodInfo.Name}()] Execution time: {watch.ElapsedMilliseconds}ms");
+            }
+            
         }
     }
 }

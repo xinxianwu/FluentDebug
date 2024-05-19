@@ -6,23 +6,23 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FluentDebug
 {
-    public class FluentDebug
+    public class FluentDebugger
     {
         private readonly ILogger _logger;
 
-        private FluentDebug(ILogger logger)
+        private FluentDebugger(ILogger logger)
         {
             _logger = logger;
         }
 
-        public static FluentDebug Create(ILogger logger)
+        public static FluentDebugger Create(ILogger logger)
         {
-            return new FluentDebug(logger);
+            return new FluentDebugger(logger);
         }
 
-        public static FluentDebug Create()
+        public static FluentDebugger Create()
         {
-            return new FluentDebug(NullLogger.Instance);
+            return new FluentDebugger(NullLogger.Instance);
         }
 
         public TResult Run<TResult>(Func<TResult> func)

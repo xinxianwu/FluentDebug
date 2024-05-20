@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using FluentDebug.Loggers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -11,22 +13,22 @@ namespace FluentDebug
 {
     public class FluentDebugger
     {
-        private readonly ILogger _logger;
+        private readonly ILogAdapter _logger;
         private bool _logParameters;
 
-        private FluentDebugger(ILogger logger)
+        private FluentDebugger(ILogAdapter logger)
         {
             _logger = logger;
         }
 
-        public static FluentDebugger Create(ILogger logger)
+        public static FluentDebugger Create(ILogAdapter logger)
         {
             return new FluentDebugger(logger);
         }
 
         public static FluentDebugger Create()
         {
-            return new FluentDebugger(NullLogger.Instance);
+            return new FluentDebugger(new LogAdapter(NullLogger.Instance));
         }
 
         public TResult Run<TResult>(Expression<Func<TResult>> expression)
@@ -90,17 +92,17 @@ namespace FluentDebug
         {
             if (methodInfo == null)
             {
-                _logger.LogInformation($"Execution time: {watch.ElapsedMilliseconds}ms");
+                _logger.Log($"Execution time: {watch.ElapsedMilliseconds}ms");
             }
             else
             {
                 if (string.IsNullOrEmpty(parameters))
                 {
-                    _logger.LogInformation($"[{methodInfo.Name}()] Execution time: {watch.ElapsedMilliseconds}ms");
+                    _logger.Log($"[{methodInfo.Name}()] Execution time: {watch.ElapsedMilliseconds}ms");
                 }
                 else
                 {
-                    _logger.LogInformation($"[{methodInfo.Name}()] Parameters: {parameters} | Execution time: {watch.ElapsedMilliseconds}ms");
+                    _logger.Log($"[{methodInfo.Name}()] Parameters: {parameters} | Execution time: {watch.ElapsedMilliseconds}ms");
                 }
             }
         }

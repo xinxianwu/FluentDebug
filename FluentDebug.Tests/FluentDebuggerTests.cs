@@ -1,53 +1,58 @@
+using FluentDebug.Loggers;
+
 namespace FluentDebug.Tests;
 
 public class FluentDebuggerTests
 {
+    private ILogAdapter _logger;
+
     [SetUp]
     public void Setup()
     {
+        _logger = new LogAdapter(new ConsoleLogger());
     }
 
     [Test]
     public void log_sync_method_execution_time()
     {
-        var result = FluentDebugger.Create(new ConsoleLogger())
-            .Run(() => DelayMethod(1));
+        var result = FluentDebugger.Create(_logger)
+            .Run(() => DelayMethod(100));
     }
 
     [Test]
     public async Task log_async_method_execution_time()
     {
-        var result = await FluentDebugger.Create(new ConsoleLogger())
-            .RunAsync(() => DelayMethodAsync(1));
+        var result = await FluentDebugger.Create(_logger)
+            .RunAsync(() => DelayMethodAsync(100));
     }
 
     [Test]
     public void log_sync_method_parameters()
     {
-        var result = FluentDebugger.Create(new ConsoleLogger())
+        var result = FluentDebugger.Create(_logger)
             .LogParameters()
-            .Run(() => DelayMethod(1));
+            .Run(() => DelayMethod(100));
     }
     
     
     [Test]
     public async Task log_async_method_parameters()
     {
-        var result = await FluentDebugger.Create(new ConsoleLogger())
+        var result = await FluentDebugger.Create(_logger)
             .LogParameters()
-            .RunAsync(() => DelayMethodAsync(1));
+            .RunAsync(() => DelayMethodAsync(100));
     }
 
-    private bool DelayMethod(int seconds)
+    private bool DelayMethod(int milliseconds)
     {
-        Thread.Sleep(seconds * 1000);
+        Thread.Sleep(milliseconds);
 
         return true;
     }
 
-    private async Task<bool> DelayMethodAsync(int seconds)
+    private async Task<bool> DelayMethodAsync(int millisecond)
     {
-        await Task.Delay(seconds * 1000);
+        await Task.Delay(millisecond);
 
         return true;
     }

@@ -102,7 +102,7 @@ namespace FluentDebug
                 }
                 else
                 {
-                    _logger.Log($"[{methodInfo.Name}()] Parameters: {parameters} | Execution time: {watch.ElapsedMilliseconds}ms");
+                    _logger.Log($"[{methodInfo.Name}()] Parameters: `{parameters}` | Execution time: {watch.ElapsedMilliseconds}ms");
                 }
             }
         }

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using FluentDebug.Loggers;
+using FluentDebug.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FluentDebug
@@ -14,7 +12,7 @@ namespace FluentDebug
     {
         private readonly ILogAdapter _logger;
         private bool _logParameters;
-        private Func<Exception, Exception> _rethrowHandler;
+        private Func<ExceptionContext, Exception> _rethrowHandler;
 
         private FluentDebugger(ILogAdapter logger)
         {
@@ -31,7 +29,13 @@ namespace FluentDebug
             return new FluentDebugger(new LogAdapter(NullLogger.Instance));
         }
 
-        public FluentDebugger Rethrow(Func<Exception, Exception> rethrowHandler)
+        public FluentDebugger LogParameters()
+        {
+            _logParameters = true;
+            return this;
+        }
+
+        public FluentDebugger Rethrow(Func<ExceptionContext, Exception> rethrowHandler)
         {
             _rethrowHandler = rethrowHandler;
 
@@ -41,11 +45,12 @@ namespace FluentDebug
         public TResult Run<TResult>(Expression<Func<TResult>> expression)
         {
             var watch = Stopwatch.StartNew();
+            var callerInfoModel = new CallerInfoModel<TResult>(expression);
 
             try
             {
                 var result = expression.Compile().Invoke();
-                WriteLog(watch, expression);
+                WriteLog(watch, callerInfoModel);
 
                 return result;
             }
@@ -53,7 +58,13 @@ namespace FluentDebug
             {
                 if (_rethrowHandler != null)
                 {
-                    throw _rethrowHandler.Invoke(e);
+                    throw _rethrowHandler.Invoke(new ExceptionContext
+                    {
+                        Exception = e,
+                        MethodName = callerInfoModel.MethodName,
+                        Parameters = callerInfoModel.Parameters,
+                        ElapsedMilliseconds = watch.ElapsedMilliseconds
+                    });
                 }
 
                 throw;
@@ -63,11 +74,12 @@ namespace FluentDebug
         public async Task<TResult> RunAsync<TResult>(Expression<Func<Task<TResult>>> expression)
         {
             var watch = Stopwatch.StartNew();
+            var callerInfoModel = new CallerInfoModel<Task<TResult>>(expression);
 
             try
             {
                 var result = await expression.Compile().Invoke();
-                WriteLog(watch, expression);
+                WriteLog(watch, callerInfoModel);
 
                 return result;
             }
@@ -75,72 +87,31 @@ namespace FluentDebug
             {
                 if (_rethrowHandler != null)
                 {
-                    throw _rethrowHandler.Invoke(e);
+                    throw _rethrowHandler.Invoke(new ExceptionContext
+                    {
+                        Exception = e,
+                        MethodName = callerInfoModel.MethodName,
+                        Parameters = callerInfoModel.Parameters,
+                        ElapsedMilliseconds = watch.ElapsedMilliseconds
+                    });
                 }
-                
+
                 throw;
             }
         }
 
-        public FluentDebugger LogParameters()
+        private void WriteLog<TResult>(Stopwatch watch, CallerInfoModel<TResult> callerInfoModel)
         {
-            _logParameters = true;
-            return this;
-        }
-
-        private void WriteLog<TValue>(Stopwatch watch, Expression<Func<TValue>> expression)
-        {
-            MethodInfo methodInfo = null;
-            var parameters = string.Empty;
-            if (expression.Body is MethodCallExpression methodCallExpression)
-            {
-                methodInfo = methodCallExpression.Method;
-                parameters = _logParameters ? FormatParametersAndArguments(methodInfo, methodCallExpression) : string.Empty;
-            }
-
-            if (methodInfo == null)
+            if (!callerInfoModel.IsMethodCall)
             {
                 _logger.Log($"Execution time: {watch.ElapsedMilliseconds}ms");
                 return;
             }
 
-            _logger.Log(string.IsNullOrEmpty(parameters)
-                ? $"[{methodInfo.Name}()] Execution time: {watch.ElapsedMilliseconds}ms"
-                : $"[{methodInfo.Name}()] Parameters: `{parameters}` | Execution time: {watch.ElapsedMilliseconds}ms");
-        }
-
-        private static string FormatParametersAndArguments(MethodInfo methodInfo, MethodCallExpression methodCallExpression)
-        {
-            var parameterInfos = methodInfo.GetParameters();
-            var arguments = methodCallExpression.Arguments.ToList();
-
-            var format = parameterInfos
-                .Zip(arguments, (parameterInfo, argumentExpression) =>
-                {
-                    var value = Expression.Lambda(argumentExpression).Compile().DynamicInvoke();
-                    var valueString = value switch
-                    {
-                        IDictionary dictionary => FormatDictionary(dictionary),
-                        IEnumerable enumerable => FormatEnumerable(enumerable),
-                        _ => value.ToString()
-                    };
-
-                    return $"{parameterInfo.Name}: {valueString}";
-                });
-
-            return string.Join(", ", format);
-        }
-
-        private static string FormatDictionary(IDictionary dictionary)
-        {
-            var values = dictionary.Keys.Cast<object>().Select(key => $"{key}: {dictionary[key]}");
-            return $"{{{string.Join(", ", values)}}}";
-        }
-
-        private static string FormatEnumerable(IEnumerable enumerable)
-        {
-            var values = enumerable.Cast<object>().Select(x => x.ToString());
-            return $"[{string.Join(", ", values)}]";
+            var message = callerInfoModel.Parameters.Count == 0
+                ? $"[{callerInfoModel.MethodName}()] Execution time: {watch.ElapsedMilliseconds}ms"
+                : $"[{callerInfoModel.MethodName}()] Parameters: `{callerInfoModel.FormatParameters()}` | Execution time: {watch.ElapsedMilliseconds}ms";
+            _logger.Log(message);
         }
     }
 }

@@ -68,7 +68,7 @@ public class FluentDebuggerTests
         {
             FluentDebugger.Create(_logger)
                 .LogParameters()
-                .Rethrow(exception => new MyException(exception, "An error occurred"))
+                .Rethrow(callerInfoModel => new MyException(callerInfoModel.Exception, $"{callerInfoModel.MethodName} an error occurred"))
                 .Run(() => ThrowException(100,
                     new List<int> { 1, 2, 3 },
                     new Dictionary<string, int>
@@ -80,7 +80,7 @@ public class FluentDebuggerTests
         };
 
         action.Should().Throw<MyException>()
-            .WithMessage("An error occurred")
+            .WithMessage("ThrowException an error occurred")
             .WithInnerException<ArgumentException>()
             .WithMessage("Too many arguments");
     }
@@ -92,7 +92,7 @@ public class FluentDebuggerTests
         {
             FluentDebugger.Create(_logger)
                 .LogParameters()
-                .Rethrow(exception => new MyException(exception, "An error occurred"))
+                .Rethrow(callerInfoModel => new MyException(callerInfoModel.Exception, "ThrowExceptionAsync an error occurred"))
                 .RunAsync(() => ThrowExceptionAsync(100,
                     new List<int> { 1, 2, 3 },
                     new Dictionary<string, int>
@@ -106,7 +106,7 @@ public class FluentDebuggerTests
         };
 
         action.Should().Throw<MyException>()
-            .WithMessage("An error occurred")
+            .WithMessage("ThrowExceptionAsync an error occurred")
             .WithInnerException<ArgumentException>()
             .WithMessage("Too many arguments");
     }

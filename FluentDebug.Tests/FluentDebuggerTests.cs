@@ -20,7 +20,7 @@ public class FluentDebuggerTests
         var result = FluentDebugger.Create(_logger)
             .Run(() => DelayMethod(100));
 
-        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("Execution time:")));
+        LogContextShouldContainSubString("Execution time:");
     }
 
     [Test]
@@ -29,7 +29,7 @@ public class FluentDebuggerTests
         var result = await FluentDebugger.Create(_logger)
             .RunAsync(() => DelayMethodAsync(100));
 
-        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("Execution time:")));
+        LogContextShouldContainSubString("Execution time:");
     }
 
     [Test]
@@ -46,7 +46,7 @@ public class FluentDebuggerTests
                     { "c", 3 }
                 }));
 
-        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethod()] Parameters: `milliseconds: 100, list: [1, 2, 3], dictionary: {a: 1, b: 2, c: 3}` | Execution time:")));
+        LogContextShouldContainSubString("[DelayMethod()] Parameters: `milliseconds: 100, list: [1, 2, 3], dictionary: {a: 1, b: 2, c: 3}` | Execution time:");
     }
 
     [Test]
@@ -56,7 +56,12 @@ public class FluentDebuggerTests
             .LogParameters()
             .RunAsync(() => DelayMethodAsync(100, new List<int> { 1, 2, 3 }));
 
-        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethodAsync()] Parameters: `milliseconds: 100, list: [1, 2, 3]` | Execution time:")));
+        LogContextShouldContainSubString("[DelayMethodAsync()] Parameters: `milliseconds: 100, list: [1, 2, 3]` | Execution time:");
+    }
+
+    private void LogContextShouldContainSubString(string subString)
+    {
+        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains(subString)));
     }
 
     private bool DelayMethod(int milliseconds, List<int> list, Dictionary<string, int> dictionary)

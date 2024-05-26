@@ -37,9 +37,16 @@ public class FluentDebuggerTests
     {
         var result = FluentDebugger.Create(_logger)
             .LogParameters()
-            .Run(() => DelayMethod(100, new List<int> { 1, 2, 3 }));
+            .Run(() => DelayMethod(100,
+                new List<int> { 1, 2, 3 },
+                new Dictionary<string, int>
+                {
+                    { "a", 1 },
+                    { "b", 2 },
+                    { "c", 3 }
+                }));
 
-        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethod()] Parameters: `milliseconds: 100, list: [1, 2, 3]` | Execution time:")));
+        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethod()] Parameters: `milliseconds: 100, list: [1, 2, 3], dictionary: {a: 1, b: 2, c: 3}` | Execution time:")));
     }
 
     [Test]
@@ -52,7 +59,7 @@ public class FluentDebuggerTests
         _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethodAsync()] Parameters: `milliseconds: 100, list: [1, 2, 3]` | Execution time:")));
     }
 
-    private bool DelayMethod(int milliseconds, List<int> list)
+    private bool DelayMethod(int milliseconds, List<int> list, Dictionary<string, int> dictionary)
     {
         Thread.Sleep(milliseconds);
 

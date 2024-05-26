@@ -86,15 +86,23 @@ namespace FluentDebug
                 .Zip(arguments, (parameterInfo, argumentExpression) =>
                 {
                     var value = Expression.Lambda(argumentExpression).Compile().DynamicInvoke();
-                    string valueString;
-                    if (value is IEnumerable enumerable)
-                        valueString = FormatEnumerable(enumerable);
-                    else
-                        valueString = value.ToString();
+                    var valueString = value switch
+                    {
+                        IDictionary dictionary => FormatDictionary(dictionary),
+                        IEnumerable enumerable => FormatEnumerable(enumerable),
+                        _ => value.ToString()
+                    };
+
                     return $"{parameterInfo.Name}: {valueString}";
                 });
             
             return string.Join(", ", format);
+        }
+
+        private static string FormatDictionary(IDictionary dictionary)
+        {
+            var values = dictionary.Keys.Cast<object>().Select(key => $"{key}: {dictionary[key]}");
+            return $"{{{string.Join(", ", values)}}}";
         }
 
         private static string FormatEnumerable(IEnumerable enumerable)

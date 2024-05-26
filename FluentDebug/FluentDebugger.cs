@@ -14,6 +14,7 @@ namespace FluentDebug
     {
         private readonly ILogAdapter _logger;
         private bool _logParameters;
+        private Func<Exception, Exception> _rethrowHandler;
 
         private FluentDebugger(ILogAdapter logger)
         {
@@ -30,26 +31,55 @@ namespace FluentDebug
             return new FluentDebugger(new LogAdapter(NullLogger.Instance));
         }
 
+        public FluentDebugger Rethrow(Func<Exception, Exception> rethrowHandler)
+        {
+            _rethrowHandler = rethrowHandler;
+
+            return this;
+        }
+
         public TResult Run<TResult>(Expression<Func<TResult>> expression)
         {
             var watch = Stopwatch.StartNew();
 
-            var result = expression.Compile().Invoke();
+            try
+            {
+                var result = expression.Compile().Invoke();
+                WriteLog(watch, expression);
 
-            WriteLog(watch, expression);
+                return result;
+            }
+            catch (Exception e)
+            {
+                if (_rethrowHandler != null)
+                {
+                    throw _rethrowHandler.Invoke(e);
+                }
 
-            return result;
+                throw;
+            }
         }
 
         public async Task<TResult> RunAsync<TResult>(Expression<Func<Task<TResult>>> expression)
         {
             var watch = Stopwatch.StartNew();
 
-            var result = await expression.Compile().Invoke();
+            try
+            {
+                var result = await expression.Compile().Invoke();
+                WriteLog(watch, expression);
 
-            WriteLog(watch, expression);
-
-            return result;
+                return result;
+            }
+            catch (Exception e)
+            {
+                if (_rethrowHandler != null)
+                {
+                    throw _rethrowHandler.Invoke(e);
+                }
+                
+                throw;
+            }
         }
 
         public FluentDebugger LogParameters()

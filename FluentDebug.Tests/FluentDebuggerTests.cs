@@ -1,4 +1,6 @@
+using FluentAssertions;
 using FluentDebug.Loggers;
+using FluentDebug.Tests.Exceptions;
 using NSubstitute;
 
 namespace FluentDebug.Tests;
@@ -57,6 +59,72 @@ public class FluentDebuggerTests
             .RunAsync(() => DelayMethodAsync(100, new List<int> { 1, 2, 3 }));
 
         LogContextShouldContainSubString("[DelayMethodAsync()] Parameters: `milliseconds: 100, list: [1, 2, 3]` | Execution time:");
+    }
+
+    [Test]
+    public void throw_exception_in_sync_method()
+    {
+        var action = () =>
+        {
+            FluentDebugger.Create(_logger)
+                .LogParameters()
+                .Rethrow(exception => new MyException(exception, "An error occurred"))
+                .Run(() => ThrowException(100,
+                    new List<int> { 1, 2, 3 },
+                    new Dictionary<string, int>
+                    {
+                        { "a", 1 },
+                        { "b", 2 },
+                        { "c", 3 }
+                    }));
+        };
+
+        action.Should().Throw<MyException>()
+            .WithMessage("An error occurred")
+            .WithInnerException<ArgumentException>()
+            .WithMessage("Too many arguments");
+    }
+
+    [Test]
+    public void throw_exception_in_async_method()
+    {
+        var action = () =>
+        {
+            FluentDebugger.Create(_logger)
+                .LogParameters()
+                .Rethrow(exception => new MyException(exception, "An error occurred"))
+                .RunAsync(() => ThrowExceptionAsync(100,
+                    new List<int> { 1, 2, 3 },
+                    new Dictionary<string, int>
+                    {
+                        { "a", 1 },
+                        { "b", 2 },
+                        { "c", 3 }
+                    }))
+                .GetAwaiter()
+                .GetResult();
+        };
+
+        action.Should().Throw<MyException>()
+            .WithMessage("An error occurred")
+            .WithInnerException<ArgumentException>()
+            .WithMessage("Too many arguments");
+    }
+
+    private bool ThrowException(int milliseconds, List<int> list, Dictionary<string, int> dictionary)
+    {
+        throw new ArgumentException("Too many arguments");
+
+        return true;
+    }
+
+    private async Task<bool> ThrowExceptionAsync(int milliseconds, List<int> list, Dictionary<string, int> dictionary)
+    {
+        await Task.Delay(1);
+        
+        throw new ArgumentException("Too many arguments");
+
+        return true;
     }
 
     private void LogContextShouldContainSubString(string subString)

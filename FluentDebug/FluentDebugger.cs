@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
@@ -40,7 +42,7 @@ namespace FluentDebug
             if (expression.Body is MethodCallExpression methodCallExpression)
             {
                 methodInfo = methodCallExpression.Method;
-                parameters = LogParameters(methodInfo, methodCallExpression);
+                parameters = _logParameters ? FormatParametersAndArguments(methodInfo, methodCallExpression) : string.Empty;
             }
 
             var result = expression.Compile().Invoke();
@@ -59,7 +61,7 @@ namespace FluentDebug
             if (expression.Body is MethodCallExpression methodCallExpression)
             {
                 methodInfo = methodCallExpression.Method;
-                parameters = LogParameters(methodInfo, methodCallExpression);
+                parameters = _logParameters ? FormatParametersAndArguments(methodInfo, methodCallExpression) : string.Empty;
             }
 
             var result = await expression.Compile().Invoke();
@@ -75,17 +77,30 @@ namespace FluentDebug
             return this;
         }
 
-        private string LogParameters(MethodInfo methodInfo, MethodCallExpression methodCallExpression)
+        private static string FormatParametersAndArguments(MethodInfo methodInfo, MethodCallExpression methodCallExpression)
         {
-            if (_logParameters)
-            {
-                var parameterInfos = methodInfo.GetParameters();
-                var arguments = methodCallExpression.Arguments.ToList();
+            var parameterInfos = methodInfo.GetParameters();
+            var arguments = methodCallExpression.Arguments.ToList();
 
-                return string.Join(", ", parameterInfos.Zip(arguments, (info, expression1) => $"{info.Name}: {expression1}"));
-            }
+            var format = parameterInfos
+                .Zip(arguments, (parameterInfo, argumentExpression) =>
+                {
+                    var value = Expression.Lambda(argumentExpression).Compile().DynamicInvoke();
+                    string valueString;
+                    if (value is IEnumerable enumerable)
+                        valueString = FormatEnumerable(enumerable);
+                    else
+                        valueString = value.ToString();
+                    return $"{parameterInfo.Name}: {valueString}";
+                });
+            
+            return string.Join(", ", format);
+        }
 
-            return string.Empty;
+        private static string FormatEnumerable(IEnumerable enumerable)
+        {
+            var values = enumerable.Cast<object>().Select(x => x.ToString());
+            return $"[{string.Join(", ", values)}]";
         }
 
         private void WriteLog(Stopwatch watch, MethodInfo methodInfo, string parameters)

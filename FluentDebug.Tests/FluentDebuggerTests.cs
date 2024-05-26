@@ -37,9 +37,9 @@ public class FluentDebuggerTests
     {
         var result = FluentDebugger.Create(_logger)
             .LogParameters()
-            .Run(() => DelayMethod(100));
+            .Run(() => DelayMethod(100, new List<int> { 1, 2, 3 }));
 
-        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethod()] Parameters: `milliseconds: 100` | Execution time:")));
+        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethod()] Parameters: `milliseconds: 100, list: [1, 2, 3]` | Execution time:")));
     }
 
     [Test]
@@ -47,9 +47,16 @@ public class FluentDebuggerTests
     {
         var result = await FluentDebugger.Create(_logger)
             .LogParameters()
-            .RunAsync(() => DelayMethodAsync(100));
+            .RunAsync(() => DelayMethodAsync(100, new List<int> { 1, 2, 3 }));
 
-        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethodAsync()] Parameters: `millisecond: 100` | Execution time:")));
+        _logger.Received(1).Log(Arg.Is<string>(s => s.Contains("[DelayMethodAsync()] Parameters: `milliseconds: 100, list: [1, 2, 3]` | Execution time:")));
+    }
+
+    private bool DelayMethod(int milliseconds, List<int> list)
+    {
+        Thread.Sleep(milliseconds);
+
+        return true;
     }
 
     private bool DelayMethod(int milliseconds)
@@ -59,9 +66,16 @@ public class FluentDebuggerTests
         return true;
     }
 
-    private async Task<bool> DelayMethodAsync(int millisecond)
+    private async Task<object> DelayMethodAsync(int milliseconds, List<int> list)
     {
-        await Task.Delay(millisecond);
+        await Task.Delay(milliseconds);
+
+        return true;
+    }
+
+    private async Task<bool> DelayMethodAsync(int milliseconds)
+    {
+        await Task.Delay(milliseconds);
 
         return true;
     }
